@@ -9,6 +9,8 @@ import { Route, Routes, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { format } from 'date-fns';
 import api from './api/posts'
+import useWindowSize from "./hooks/useWindowSize";
+import useAxiosFetch from "./hooks/useAxiosFetch";
 
 function App() {
   const [posts, setPosts] = useState([])
@@ -19,30 +21,39 @@ function App() {
   const [editTitle, setEditTitle] = useState('');
   const [editBody, setEditBody] = useState('');
   const navigate = useNavigate();
+  const { width } = useWindowSize();
+  
+  //custom hook useAxiosFetch
+  const { data, fetchError, isLoading } = useAxiosFetch('http://localhost:3500/posts')
 
-  //READ: only on loadtime so empty array dependency
   useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        const response = await api.get('/posts');//axios no need to take JSON and parse to an object unlike fetchAPI
-        setPosts(response.data);//axios will catch err below 200
-      } catch (err) {
-        //not in the 200 response range
-        if (err.response) {
-          // Not in the 200 response range 
-          console.log(err.response.data);
-          console.log(err.response.status);
-          console.log(err.response.headers);
-        } else {
-          console.log(`Error: ${err.message}`);
-        }
-      }
-    }
+    setPosts(data);
+  }, [data])
 
-    fetchPosts();
-  },[])
 
-  //search func using useEffect with posts and search dependencies
+  // //READ: only on loadtime so empty array dependency
+  // useEffect(() => {
+  //   const fetchPosts = async () => {
+  //     try {
+  //       const response = await api.get('/posts');//axios no need to take JSON and parse to an object unlike fetchAPI
+  //       setPosts(response.data);//axios will catch err below 200
+  //     } catch (err) {
+  //       //not in the 200 response range
+  //       if (err.response) {
+  //         // Not in the 200 response range 
+  //         console.log(err.response.data);
+  //         console.log(err.response.status);
+  //         console.log(err.response.headers);
+  //       } else {
+  //         console.log(`Error: ${err.message}`);
+  //       }
+  //     }
+  //   }
+
+  //   fetchPosts();
+  // },[])
+
+  //search func to display posts using useEffect with posts and search dependencies
   useEffect(() => {
     const filteredResults = posts.filter((post) => 
       ((post.body).toLowerCase()).includes(search.toLowerCase())
@@ -96,11 +107,13 @@ function App() {
     <Routes>
       <Route
         path="/"
-        element={<Layout search={search} setSearch={setSearch} />}
+        element={<Layout width={width} search={search} setSearch={setSearch} />}
       >
         {/* nested route inside layout route  */}
         <Route index element={<Home 
-                              posts={searchResults} 
+                              posts={searchResults}
+                              fetchError={fetchError}
+                              isLoading={isLoading} 
                               />} />
         <Route path="post">
             <Route
